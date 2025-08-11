@@ -1,0 +1,201 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKER_IMAGE: hubert-zych-portfolio
+  DOCKER_TAG: latest
+
+jobs:
+  # Code quality and security checks
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality & Security
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        npm install -g htmlhint stylelint eslint
+        
+    - name: Lint HTML
+      run: htmlhint index.html
+      continue-on-error: true
+      
+    - name: Lint CSS
+      run: npx stylelint "*.css"
+      continue-on-error: true
+      
+    - name: Lint JavaScript
+      run: npx eslint "*.js"
+      continue-on-error: true
+      
+    - name: Security scan with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+      continue-on-error: true
+
+  # Build and test Docker image
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: code-quality
+    name: Docker Build & Test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} .
+        
+    - name: Test Docker image
+      run: |
+        # Start container
+        docker run -d --name test-container -p 8080:80 ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+        
+        # Wait for container to start
+        sleep 10
+        
+        # Test health check
+        curl -f http://localhost:8080/health || exit 1
+        
+        # Test main page
+        curl -f http://localhost:8080/ || exit 1
+        
+        # Stop container
+        docker stop test-container
+        docker rm test-container
+        
+    - name: Run security scan on Docker image
+      run: |
+        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          aquasec/trivy image ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+      continue-on-error: true
+      
+    - name: Save Docker image
+      run: |
+        docker save ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} > portfolio-image.tar
+        
+    - name: Upload Docker image artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: portfolio-image.tar
+        retention-days: 1
+
+  # Deploy to GitHub Pages
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [code-quality, docker-build]
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+  # Create GitHub Release (only on main branch with tags)
+  release:
+    runs-on: ubuntu-latest
+    needs: [docker-build, deploy]
+    name: Create Release
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download Docker image
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-image
+        
+    - name: Get version
+      id: version
+      run: echo "version=$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: Portfolio Release v${{ steps.version.outputs.version }}
+        body: |
+          ## DevOps Portfolio Release
+          
+          ### Changes
+          - Website updated with latest information
+          - Docker image built and tested
+          - Deployed to GitHub Pages
+          
+          ### Technical Details
+          - **Docker Image**: `${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}`
+          - **Build Date**: $(date)
+          - **Commit**: ${{ github.sha }}
+          
+          ### Links
+          - 🌐 [Live Website](https://nihilx.github.io/my_page)
+          - 📦 [Docker Image](docker-image.tar)
+        draft: false
+        prerelease: false
+
+  # Notification job
+  notify:
+    runs-on: ubuntu-latest
+    needs: [code-quality, docker-build, deploy]
+    name: Notify Deployment Status
+    if: always()
+    
+    steps:
+    - name: Deployment Status
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "✅ Deployment successful!"
+          echo "🌐 Website is live at GitHub Pages"
+          echo "📦 Docker image built and tested"
+          echo "🔒 Security scans completed"
+        else
+          echo "❌ Deployment failed!"
+          echo "Please check the logs for details"
+        fi
