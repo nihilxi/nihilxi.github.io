@@ -10,6 +10,11 @@
 <body>
     <div class="container">
         <header class="header">
+            <div class="theme-toggle">
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle dark mode">
+                    <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+            </div>
             <div class="profile">
                 <div class="profile-info">
                     <h1>Hubert Zych</h1>
@@ -132,11 +137,6 @@
         <footer class="footer">
             <div class="footer-content">
                 <p>&copy; 2025 Hubert Zych. Deployed with Docker + GitHub Actions CI/CD Pipeline</p>
-                <div class="pipeline-status">
-                    <span class="status-badge">✅ Containerized</span>
-                    <span class="status-badge">✅ CI/CD Pipeline</span>
-                    <span class="status-badge">✅ Automated Deployment</span>
-                </div>
             </div>
         </footer>
     </div>
