@@ -10,7 +10,7 @@
 A modern, responsive portfolio website showcasing DevOps engineering skills through practical implementation of CI/CD pipelines, containerization, and automated deployment.
 
 ### 🌐 Live Demo
-- **Website**: [https://nihilx.github.io/my_page](https://nihilx.github.io/my_page)
+- **Website**: [https://nihilxi.github.io](https://nihilxi.github.io)
 - **Status**: ✅ Deployed with automated CI/CD
 
 ## 🛠️ Technology Stack
@@ -53,8 +53,8 @@ A modern, responsive portfolio website showcasing DevOps engineering skills thro
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/nihilx/my_page.git
-   cd my_page
+   git clone git@github.com:nihilxi/nihilxi.github.io.git
+   cd nihilxi.github.io
    ```
 
 2. **Build Docker image**
@@ -111,7 +111,7 @@ The automated pipeline includes:
 ## 📁 Project Structure
 
 ```
-my_page/
+nihilxi.github.io/
 ├── .github/
 │   └── workflows/
 │       └── ci-cd.yml          # GitHub Actions pipeline

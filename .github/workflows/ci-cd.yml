@@ -175,7 +175,7 @@ jobs:
           - **Commit**: ${{ github.sha }}
           
           ### Links
-          - 🌐 [Live Website](https://nihilx.github.io/my_page)
+          - 🌐 [Live Website](https://nihilxi.github.io)
           - 📦 [Docker Image](docker-image.tar)
         draft: false
         prerelease: false
