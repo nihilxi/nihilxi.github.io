@@ -1,6 +1,9 @@
 # Use nginx alpine for lightweight container
 FROM nginx:alpine
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
 # Copy website files to nginx html directory
 COPY . /usr/share/nginx/html/
 
@@ -12,7 +15,7 @@ EXPOSE 80
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
+  CMD curl -fsS http://localhost/ || exit 1
 
 # Add labels for better container management
 LABEL maintainer="Hubert Zych <hubert.zych@example.com>"

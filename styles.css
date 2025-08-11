@@ -292,6 +292,36 @@ body {
     transform: scale(1.05);
 }
 
+/* Contact links styles */
+.contact-links {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--text-accent), #6c5ce7);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow);
+}
+
+.contact-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px var(--shadow-hover);
+    background: linear-gradient(135deg, #6c5ce7, var(--text-accent));
+}
+
+.contact-link i {
+    font-size: 1.2rem;
+}
+
 .footer {
     background: var(--footer-bg);
     color: var(--footer-text);
@@ -304,7 +334,17 @@ body {
 }
 
 .footer-content p {
-    margin-bottom: 0;
+    margin-bottom: 10px;
+}
+
+.footer-content a {
+    color: var(--footer-text);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-content a:hover {
+    color: var(--text-accent);
 }
 
 /* Responsive Design */
@@ -342,6 +382,10 @@ body {
     
     .skills-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .contact-links {
+        align-items: center;
     }
 }
 

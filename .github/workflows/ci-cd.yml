@@ -9,6 +9,7 @@ on:
 env:
   DOCKER_IMAGE: hubert-zych-portfolio
   DOCKER_TAG: latest
+  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/hubert-zych-portfolio
 
 jobs:
   # Code quality and security checks
@@ -55,6 +56,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: code-quality
     name: Docker Build & Test
+    permissions:
+      contents: read
+      packages: write
     
     steps:
     - name: Checkout code
@@ -90,6 +94,23 @@ jobs:
         docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
           aquasec/trivy image ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
       continue-on-error: true
+
+    - name: Log in to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Tag image for GHCR
+      run: |
+        docker tag ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} ${{ env.GHCR_IMAGE }}:latest
+        docker tag ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }} ${{ env.GHCR_IMAGE }}:sha-${{ github.sha }}
+
+    - name: Push image to GHCR
+      run: |
+        docker push ${{ env.GHCR_IMAGE }}:latest
+        docker push ${{ env.GHCR_IMAGE }}:sha-${{ github.sha }}
       
     - name: Save Docker image
       run: |
@@ -140,6 +161,9 @@ jobs:
     needs: [docker-build, deploy]
     name: Create Release
     if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')
+    permissions:
+      contents: write
+      packages: read
     
     steps:
     - name: Checkout code
@@ -175,8 +199,9 @@ jobs:
           - **Commit**: ${{ github.sha }}
           
           ### Links
-          - 🌐 [Live Website](https://nihilx.github.io/my_page)
+          - 🌐 [Live Website](https://nihilx.github.io/)
           - 📦 [Docker Image](docker-image.tar)
+          - 🐳 GHCR Image: `${{ env.GHCR_IMAGE }}:latest`
         draft: false
         prerelease: false
 
